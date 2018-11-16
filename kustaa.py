@@ -53,8 +53,8 @@ class Kustaa():
         lakes -  catchemnt water bodies area (ha, float)
         err -    relative uncertainty of areas (%, dict, float)
         data -   annual loading source data (pd.DataFrame)
-        scale -  if min and max are not given for coeffs, then they are estimated
-                 from scale (float)
+        scale -  if uncertainty bounds min and max are not given for coeffs, 
+                then they are estimated from scale (float)
         fmodel - 'Kalle' uses Finer et al. 2010 (Suomen Ymparisto) - method (str)
         """              
         self.scale = scale  # (min - max) = scale * ave; used in case min-max not given 
@@ -88,7 +88,9 @@ class Kustaa():
         self.data['Background'] = self.area
         self.data['Deposition'] = self.lakes
         
-        # set up results dataframes. for each load source save expectation value and variance
+        # set up results dataframes.
+        # for each load source save expectation value and variance
+        # filled by 'compute_loads'
         k = data.columns.tolist()
         
         self.N_load = pd.DataFrame(index=data.index, columns=k)
@@ -100,8 +102,11 @@ class Kustaa():
         self.SS_load = pd.DataFrame(index=data.index, columns=k)
         self.SS_var = pd.DataFrame(index=data.index, columns=k)
         
-        self.results = []
-
+        # total loads and relative contributions of each source
+        # created by 'summarize(args)
+        self.group_shares = None
+        self.ingroup_shares = None
+        
     def compute_loads(self):
         """
         computes annual loads and their std's. Assumes all loading takes
@@ -156,11 +161,7 @@ class Kustaa():
         Args: 
             period - [start_year, end_year] (list)
         Returns:
-            group_shares - pd.DataFrame of group level statistics
-            in_groups: dict of pd.DataFrame's of within-group statistics
-            columns: 'N', 'Nstd', 'fN', 'fNstd' -->
-                    total N load (kg), std(kg), fract. of total(-), fract. std(-)
-                    + same for P and SS
+            none - updates state variables group_shares and ingroup_shares
         """
         
         if period:
@@ -185,7 +186,7 @@ class Kustaa():
                                              'P', 'Pstd', 'fP', 'fPstd',
                                              'SS', 'SSstd', 'fSS', 'fSSstd'])
         # dict container for within-group data
-        ingroups = {key: None for key in self.groups}
+        ingroup_shares = {key: None for key in self.groups}
         
         # summarize loads within groups and in total
         for g in self.groups:
@@ -220,18 +221,48 @@ class Kustaa():
                 a, b = source_contribution(xSS[k], xSS[g], vSS[k], vSS[g])
                 res.loc[k,['SS', 'SSstd', 'fSS', 'fSSstd']] = [xSS[k], vSS[k]**0.5, a, b**0.5]            
                 
-            ingroups[g] = res.copy(); del res
+            ingroup_shares[g] = res.copy(); del res
+        
+        # update state variables
+        self.group_shares = group_shares
+        self.ingroup_shares = ingroup_shares
         
         # print results to csv-file
+        # summary data
         if outfile:
             with open(outfile, 'a') as f:
+                f.write('GROUP LEVEL from ' + str(start_year) + ' to ' + str(end_year) +'\n')
                 f.write('TOTAL')
                 group_shares.to_csv(f, header=True)
                 for g in self.groups:
                     f.write('\n' + g)
-                    ingroups[g].to_csv(f, header=True)
-                    
-        return group_shares, ingroups
+                    ingroup_shares[g].to_csv(f, header=True)
+            
+            # print also annual loads and their std's
+            # create common dataframe
+            s = list(self.N_load.columns)
+            p = []
+            p.extend([k + '_std' for k in s])
+            cols = s + p
+
+            out = pd.concat([self.N_load, self.N_var**0.5], axis=1)
+            out.columns=cols  
+            with open('N_' + outfile, 'w') as f:
+                f.write('ANNUAL N LOAD (kg) \n')
+                out.to_csv(f, sep=';', header=True, index_label='Year', columns=cols)
+            del out
+            
+            out = pd.concat([self.P_load, self.P_var**0.5], axis=1)
+            out.columns=cols  
+            with open('P_' + outfile, 'w') as f:
+                f.write('ANNUAL P LOAD (kg) \n')
+                out.to_csv(f, sep=';', header=True, index_label='Year', columns=cols)
+
+            out = pd.concat([self.SS_load, self.SS_var**0.5], axis=1)
+            out.columns=cols  
+            with open('SS_' + outfile, 'w') as f:
+                f.write('ANNUAL SS LOAD (kg) \n')
+                out.to_csv(f, sep=';', header=True, index_label='Year', columns=cols)
 
 
 """ THESE FUNCTIONS DO ALL COMPUTING """
@@ -321,3 +352,72 @@ def source_contribution(K, L, varK, varL):
     v = (K / L)**2.0 * (varK / K**2.0 + varL / L**2.0 - 2.0 * varK / (K * L))
   
     return q, v
+
+""" PLOTTING FUNCTIONS """
+
+
+def make_summary_fig(dat, figtitle=None):
+    """
+    plots summary figure from dat
+    Args:
+        dat - self.group_shares or self.ingroup_shares[k] dataframe
+        figtitle - title for figure (str)
+    """
+    
+    N = len(dat.index)            
+    x = np.arange(N+1)  # the x locations for the groups
+    xlab = dat.index
+    
+    width = 0.7       # the width of the bars
+    
+    fig, ax = plt.subplots(3,2, figsize=(10,8))
+
+    n = 0
+    for m in ['N', 'P', 'SS']:
+        for k in range(N): 
+            y1 = dat[m]
+            err1 = dat[m + 'std']
+            y2 = dat['f' + m]
+            err2 = dat['f' + m + 'std']
+            
+            ax[n,0].bar(x[k], y1[k], width, yerr=err1[k], label=xlab[k])
+            ax[n,1].bar(x[k], y2[k], width, yerr=err2[k]) 
+
+        ax[n,0].set_ylabel(m + ' (kg)')
+        ax[n,0].set_xticklabels([])
+        ax[n,1].set_ylabel(m + ' fraction')
+        ax[n,1].set_xticklabels([])
+        n += 1
+    ax[2,0].legend(fontsize=8, loc='upper right')
+    
+    if figtitle:
+        fig.suptitle(figtitle)
+
+def make_timeseries_fig(L, V, cols, period, figtitle=None):
+    # L load dataframe
+    # V variance dataframe
+    ix = (L.index >= period[0]) & (L.index <= period[1])
+    
+    L = L.iloc[ix]
+    V = V.iloc[ix]
+    print(L)
+    N = len(cols)
+    fig, ax = plt.subplots(N,figsize=(10,14))
+    
+    n = 0
+    x = L.index.values
+
+    for k in cols: 
+        y = L[k].values
+        e = V[k].values**0.5
+        
+        ax[n].fill_between(x, y+e, y-e, alpha=0.7)
+        ax[n].plot(x, y, label=k)
+        ax[n].set_ylabel('kg')
+        ax[n].set_xticklabels([])
+        ax[n].legend(fontsize=8, loc='upper right')
+        n += 1
+    ax[n-1].set_xticks(x)
+    ax[n-1].set_xticklabels(x, rotation=60)
+    fig.suptitle(figtitle)
+       
