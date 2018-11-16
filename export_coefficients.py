@@ -102,7 +102,27 @@ forestry_relative = {
                                   }         
         }
 
-
-
+"""
+simple example were only few groups are considered
+"""
+simple_coeff = {
+    'NATURAL': {
+        'Background': {'N': [1.25, 0.29, 2.30], 'P': [0.049, 0.018, 0.146], 'SS': [5.1, 0.9, 47.0]},	# kg/ha/a
+        'Deposition': {'N': [3.0, 2.0, 4.0], 'P':	[0.10, 0.07, 0.15], 'SS': [0.0, 0.0, 0.0]},
+		},
+	'ANTHROPOGENIC': { # kg/ha/10 a
+		'Renewal_upland': {'N': [5.0, 0.0, 10.0], 'P': [0.3, 0.00, 0.8], 'SS': [0.0, 0.0, 0.0]},
+		'Renewal_peatland': {'N': [26.0, 12.0, 40.0], 'P': [0.6, 0.3, 0.9], 'SS': [0.0, 0.0, 0.0]},
+		'Ditching': {'N': [23.0, 12.0, 34.0], 'P': [1.7, 0.00, 3.9], 'SS': [2460.0,	170.0,	8550.0]},
+		'Ditch_maintenance': {'N': [0.0, 0.0, 0.0], 'P': [1.0, 0.00, 2.2], 'SS': [970.0, 500.0, 1500.0]},
+		'Fertilization_upland': {'N': [15.0, 0.0, 30.0], 'P': [0.00, 0.00, 0.00], 'SS': [0.0, 0.0, 0.0]},
+		'Fertilization_peatland': {'N': [0, 0, 0], 'P': [1.4,	0.00, 2.8], 'SS': [0.0, 0.0, 0.0]},		
+        'Peatextraction': {'N':[9.1, 0.0, 11.4], 'P': [0.22, 0.00, 0.44], 'SS': [30.0, 10.0, 60.0]},
+        'Agriculture': {'N': [12.1, 9.3, 14.3], 'P': [1.03, 0.67, 1.49], 'SS':[605.0, 470.0, 710.0]},
+		'Urban_household': {'N': [2.4, 0.6, 4.4], 'P': [0.03, 0.01, 0.18], 'SS': [0.4, 0.003, 0.884]},	#
+		'Scattered_household_requirement': {'N': [3.6, None, None], 'P': [0.24, None, None], 'SS': [3.7, None, None]}
+        }
+    }
+									
     
     
