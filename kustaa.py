@@ -14,32 +14,6 @@ import matplotlib.pyplot as plt
 Define parameters for calculation
 """
 
-from export_coefficients import default_coeff as coeff
-
-folder = r'c:\Repositories\Kustaa\data'
-# annual operations and other pollution sources
-datafile = r'KUSTAA_Lahtotiedot_Esimerkkilaskelma.csv'
-
-area = 6000.0 # catchment land area ha
-lakes = 100.0 # water bodies within catchment ha
-
-# import annual loading source data from csv-file, replace NaN with 0.0
-data = pd.read_csv(os.path.join(folder, datafile), sep=';', header='infer')
-data = data.fillna(0.0)
-
-# relative uncertainties of loading areas are extracted from 1st row and
-# converted to dict
-err = data[data.columns].iloc[0]
-err = err.drop('Year').to_dict() 
-err['Background'] = 5.0
-err['Deposition'] = 2.0
-
-# now drop that row from data
-data = data.drop(index=0)
-data.index = data['Year'].values.astype(int)
-data = data.drop(columns='Year')
-
-
 class Kustaa():
     """
     Defines Kustaa -model for computing point-source and diffuse loading for a
@@ -400,7 +374,7 @@ def make_timeseries_fig(L, V, cols, period, figtitle=None):
     
     L = L.iloc[ix]
     V = V.iloc[ix]
-    print(L)
+    # print(L)
     N = len(cols)
     fig, ax = plt.subplots(N,figsize=(10,14))
     
