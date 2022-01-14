@@ -3,6 +3,7 @@
 ***KUSTAA*** is a simple tool to estimate loading of suspended solids, total nitrogen and phosphorus from diffuse and point-sources in a catchment. The repository containst two versions:
 
 ***Easy-to-use spreadsheet-tool*** in MS Excel, located in \excel folder. This follows Launiainen et al. 2015 Suomen Ympäristö 33 (In Finnish)
+
 ***Python 3.x implementation*** for more advanced use, without GUI. Used in Bhattacharjee et al. 2021 Sci. Tot. Env. 
 
 ***References:***
